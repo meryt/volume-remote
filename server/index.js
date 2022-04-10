@@ -64,13 +64,13 @@ const setVolume = newVolume => {
   }
 }
 
-const setIsMuted = newMuted => {
-  const newMuted = !!newMuted
+const setIsMuted = newIsMuted => {
+  const newValue = !!newIsMuted
 
   if (IS_MAC_OS) {
     // TODO
   } else {
-    isMuted = newMuted
+    isMuted = newValue
   }
 }
 
