@@ -1,0 +1,46 @@
+@import "../node_modules/bootstrap/scss/bootstrap.scss";
+body {
+  background-color: $blue-800 !important;
+}
+
+.App h1 {
+  color: white;
+}
+
+.App {
+  text-align: center;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+
+button i {
+  font-size: 5em;
+  line-height: 1em;
+}
+
+div i.bi-arrow-clockwise {
+  font-size: 3em;
+}
+
+div.vol-level-col {
+  padding: 0;
+  margin: 0;
+  .btn-secondary {
+    background-color: $blue-800;
+  }
+
+  .btn {
+    padding-left: 2px;
+    margin: 0;
+    padding-bottom: 20px;
+  }
+
+}
+
+.btn .spinner-border {
+  height: 2.8em;
+  width: 2.8em;
+}

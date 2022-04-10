@@ -1,27 +1,164 @@
-// client/src/App.js
+import { useEffect, useState } from 'react'
+import './App.scss'
 
-import React from "react";
-import logo from "./logo.svg";
-import "./App.css";
+import { Button, Spinner } from 'react-bootstrap'
+
+import useHttp from './hooks/use-http'
+
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-icons/font/bootstrap-icons.scss'
 
 function App() {
-  const [data, setData] = React.useState(null);
+  const [hostname, setHostname] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [levels, setLevels] = useState([0])
+  const [isMuted, setIsMuted] = useState(true)
+  const [volume, setVolume] = useState(0)
+  const [needsRefresh, setNeedsRefresh] = useState(true)
 
-  React.useEffect(() => {
-    fetch("/api")
-      .then((res) => res.json())
-      .then((data) => setData(data.message));
-  }, []);
+  const { sendRequest } = useHttp()
+
+  useEffect(() => {
+    if (needsRefresh) {
+      setIsLoading(true)
+      fetch('/config')
+        .then(res => res.json())
+        .then(data => {
+          console.log(data)
+          setIsLoading(false)
+          setHostname(data.hostname)
+          const tmpLevels = []
+          for (let i = 0; i < data.numLevels; i++) {
+            tmpLevels.push(i * (data.maxVolume / data.numLevels))
+          }
+          setLevels(tmpLevels)
+          setVolume(data.volume)
+          setIsMuted(data.isMuted)
+          setIsLoading(false)
+        })
+      setNeedsRefresh(false)
+    }
+  }, [needsRefresh])
+
+  const postVolume = body => {
+    sendRequest(
+      {
+        url: '/volume',
+        method: 'POST',
+        body,
+        headers: { 'Content-Type': 'application/json' },
+      },
+      data => {
+        setIsMuted(data.isMuted)
+        setVolume(data.volume)
+      }
+    )
+  }
+
+  const handleMuteButtonClick = event => {
+    event.preventDefault()
+    if (isMuted) {
+      postVolume({ action: 'UNMUTE' })
+    } else {
+      postVolume({ action: 'MUTE' })
+    }
+  }
+
+  const handleVolumeDownClick = event => {
+    event.preventDefault()
+    postVolume({ action: 'DECREASE' })
+  }
+
+  const handleVolumeUpClick = event => {
+    event.preventDefault()
+    postVolume({ action: 'INCREASE' })
+  }
+
+  const handleRefreshClick = event => {
+    event.preventDefault()
+    setNeedsRefresh(true)
+  }
+
+  const setVolumeLevel = (level) => {
+    postVolume({action: 'SET_VOLUME', volume: level})
+  }
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>{!data ? "Loading..." : data}</p>
-      </header>
+    <div className="App container">
+      <div className="row mt-3 mb-5">
+        <h1>{isLoading ? 'Loading...' : hostname}</h1>
+      </div>
+      <div className="container">
+        <div className="row mb-5">
+          <Button
+            disabled={isLoading}
+            onClick={handleMuteButtonClick}
+            variant={isLoading || isMuted ? 'secondary' : 'primary'}>
+            <p>
+              <i
+                className={`${
+                  isLoading || isMuted ? 'bi-volume-mute' : 'bi-volume-off'
+                }`}></i>
+            </p>
+            <p>Sound {isLoading ? 'Loading...' : isMuted ? 'Off' : 'On'}</p>
+            <p>
+              {isLoading ? '...' : `Click to ${isMuted ? 'unmute' : 'mute'}`}
+            </p>
+          </Button>
+        </div>
+
+        <div className="row mb-5">
+          {levels.map(e => {
+            return (
+              <div className="col vol-level-col">
+                <Button
+                  disabled={isLoading}
+                  onClick={() => {setVolumeLevel(e)}}
+                  key={`volume-level-${e}`}
+                  variant={
+                    !isMuted && volume > e ? 'primary' : 'secondary'
+                  }></Button>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="row mb-5">
+          <div className="col me-3">
+            <div className="row">
+              <Button
+                onClick={handleVolumeDownClick}
+                disabled={isLoading}
+                variant={isMuted || isLoading ? 'secondary' : 'primary'}>
+                <i className="bi-volume-down"></i>
+              </Button>
+            </div>
+          </div>
+          <div className="col">
+            <div className="row">
+              <Button
+                onClick={handleVolumeUpClick}
+                disabled={isLoading}
+                variant={isMuted || isLoading ? 'secondary' : 'primary'}>
+                <i className="bi-volume-up"></i>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="row mb-3">
+          <Button variant="primary" onClick={handleRefreshClick}>
+            {isLoading && (
+              <Spinner animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            )}
+            {!isLoading && <i className="bi-arrow-clockwise"></i>}
+          </Button>
+        </div>
+      </div>
     </div>
-  );
+  )
 }
 
-export default App;
-
+export default App
