@@ -76,7 +76,7 @@ const setIsMuted = newIsMuted => {
 
 app.get('/config', (req, res) => {
   console.log('GET /config')
-  const hostname = os.hostname().split('.')[0]
+  const hostname = os.hostname().split('.')[0].replace(/-ethernet$/, '')
   res.json({
     hostname,
     numLevels: NUM_VOLUME_LEVEL_BARS,
