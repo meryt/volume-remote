@@ -1,7 +1,15 @@
-// server/index.js
-const path = require('path')
-const express = require('express')
-const os = require('os')
+
+import path from 'path'
+import express from 'express'
+import os from 'os'
+import { execa } from 'execa'
+
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Can't use native __dirname in module
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 const PORT = process.env.PORT || 3031
 const app = express()
 
@@ -9,31 +17,52 @@ const NUM_VOLUME_LEVEL_BARS = 16
 const MAX_VOLUME = 100
 const STEP_SIZE = MAX_VOLUME / NUM_VOLUME_LEVEL_BARS
 
-const IS_MAC_OS = os.platform() === 'Darwin'
-
 var volume = 40
 var isMuted = false
 
-// Have Node serve the files for our built React app
-app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
-app.use(express.json())
+const IS_MAC_OS = os.platform().toLowerCase() === 'darwin'
+if (!IS_MAC_OS) {
+  console.log(`System is running ${os.platform()}; volume control will be simulated`)
+} else {
+  console.log(`System is running Mac OS`)  
+}
 
-const getCurrentSettings = () => {
+const osascript = async (cmd) => {
+  return (await execa('osascript', ['-e', cmd])).stdout
+}
+
+const getMacVolumeSettings = async () => {
+  const str = (await osascript('get volume settings'))
+  const parts = str.split(', ')
+  const settings = {}
+  for (var part of parts) {
+    const setting = part.split(':')
+    settings[setting[0]] = setting[1]
+  }
+  return {
+    volume: Number(settings['output volume']),
+    isMuted: settings['output muted'] === 'true'
+  }
+}
+
+const getCurrentSettings = async () => {
   if (IS_MAC_OS) {
-    // TODO
+    return await getMacVolumeSettings()
   } else {
     return { volume, isMuted }
   }
 }
 
-const incrementVolume = () => {
-  let newVolume = Math.floor(getCurrentSettings().volume + STEP_SIZE)
-  setVolume(newVolume)
+const incrementVolume = async () => {
+  const curSettings = await getCurrentSettings()
+  let newVolume = Math.floor(curSettings.volume + STEP_SIZE)
+  await setVolume(newVolume)
 }
 
-const decrementVolume = () => {
-  let newVolume = Math.floor(getCurrentSettings().volume - STEP_SIZE)
-  setVolume(newVolume)
+const decrementVolume = async () => {
+  const curSettings = await getCurrentSettings()
+  let newVolume = Math.floor(curSettings.volume - STEP_SIZE)
+  await setVolume(newVolume)
 }
 
 // Set the volume from the UI by clicking on a bar.
@@ -41,14 +70,14 @@ const decrementVolume = () => {
 // value, we will ultimately add 1/2 of a bar to the volume
 // before setting it, so we don't end up with weird
 // behaviour at the limits.
-const setVolumeLevel = newVolumeLevel => {
+const setVolumeLevel = async newVolumeLevel => {
   // put the volume in the middle of the bar rather than at the limit
   newVolumeLevel += 0.5 * STEP_SIZE
-  setVolume(newVolumeLevel)
+  await setVolume(newVolumeLevel)
 }
 
 // Set the absolute volume between 0 and 100
-const setVolume = newVolume => {
+const setVolume = async newVolume => {
   if (newVolume < 0) {
     newVolume = 0
   } else if (newVolume > MAX_VOLUME) {
@@ -58,54 +87,66 @@ const setVolume = newVolume => {
   }
 
   if (IS_MAC_OS) {
-    // TODO
+    await osascript('set volume output volume ' + newVolume)
   } else {
     volume = newVolume
   }
 }
 
-const setIsMuted = newIsMuted => {
+const setIsMuted = async newIsMuted => {
   const newValue = !!newIsMuted
 
   if (IS_MAC_OS) {
-    // TODO
+     await osascript('set volume ' + (newValue ? 'with' : 'without') + ' output muted')
   } else {
     isMuted = newValue
   }
 }
 
-app.get('/config', (req, res) => {
+// Have Node serve the files for our React app
+app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
+app.use(express.json())
+
+app.get('/config', async (req, res) => {
   console.log('GET /config')
   const hostname = os.hostname().split('.')[0].replace(/-ethernet$/, '')
+
+  let settings;
+  if (IS_MAC_OS) {
+    settings = await getMacVolumeSettings()
+  } else {
+    settings = {volume, isMuted}
+  }
+
   res.json({
     hostname,
     numLevels: NUM_VOLUME_LEVEL_BARS,
     maxVolume: MAX_VOLUME,
     stepSize: STEP_SIZE,
-    volume,
-    isMuted,
+    volume: settings.volume,
+    isMuted: settings.isMuted,
   })
 })
 
-app.post('/volume', (req, res) => {
+app.post('/volume', async (req, res) => {
   console.log('POST', req.body)
   const action = req.body.action
   if (action === 'INCREASE') {
-    incrementVolume()
+    await incrementVolume()
   }
   if (action === 'DECREASE') {
-    decrementVolume()
+    await decrementVolume()
   }
   if (action === 'MUTE') {
-    setIsMuted(true)
+    await setIsMuted(true)
   }
   if (action === 'UNMUTE') {
-    setIsMuted(false)
+    await setIsMuted(false)
   }
   if (action === 'SET_VOLUME') {
-    setVolumeLevel(req.body.volume)
+    await setVolumeLevel(req.body.volume)
   }
-  res.json(getCurrentSettings())
+  res.json(await getCurrentSettings())
 })
 
 // All other GET requests not handled before will return our React app
