@@ -9,6 +9,8 @@ const NUM_VOLUME_LEVEL_BARS = 16
 const MAX_VOLUME = 100
 const STEP_SIZE = MAX_VOLUME / NUM_VOLUME_LEVEL_BARS
 
+const IS_MAC_OS = os.platform() === 'Darwin'
+
 var volume = 40
 var isMuted = false
 
@@ -16,46 +18,64 @@ var isMuted = false
 app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
 app.use(express.json())
 
-const getCurrentVolume = () => {
-  return volume
-}
-
-const getIsMuted = () => {
-  return isMuted
+const getCurrentSettings = () => {
+  if (IS_MAC_OS) {
+    // TODO
+  } else {
+    return { volume, isMuted }
+  }
 }
 
 const incrementVolume = () => {
-  volume += STEP_SIZE
-  if (volume > MAX_VOLUME) {
-    volume = MAX_VOLUME
-  }
+  let newVolume = Math.floor(getCurrentSettings().volume + STEP_SIZE)
+  setVolume(newVolume)
 }
 
 const decrementVolume = () => {
-  volume -= STEP_SIZE
-  if (volume < 0) {
-    volume = 0
-  }
+  let newVolume = Math.floor(getCurrentSettings().volume - STEP_SIZE)
+  setVolume(newVolume)
 }
 
-const setVolume = (newVolume) => {
+// Set the volume from the UI by clicking on a bar.
+// Since the bars are set based on their lowest possible
+// value, we will ultimately add 1/2 of a bar to the volume
+// before setting it, so we don't end up with weird
+// behaviour at the limits.
+const setVolumeLevel = newVolumeLevel => {
   // put the volume in the middle of the bar rather than at the limit
-  newVolume += (0.5 * STEP_SIZE)
-  console.log('Setting volume to', newVolume)
+  newVolumeLevel += 0.5 * STEP_SIZE
+  setVolume(newVolumeLevel)
+}
+
+// Set the absolute volume between 0 and 100
+const setVolume = newVolume => {
   if (newVolume < 0) {
-    volume = 0
+    newVolume = 0
   } else if (newVolume > MAX_VOLUME) {
-    volume = MAX_VOLUME
+    newVolume = MAX_VOLUME
   } else {
-    volume = Math.floor(newVolume)
+    newVolume = Math.floor(newVolume)
+  }
+
+  if (IS_MAC_OS) {
+    // TODO
+  } else {
+    volume = newVolume
   }
 }
 
 const setIsMuted = newMuted => {
-  isMuted = !(!newMuted)
+  const newMuted = !!newMuted
+
+  if (IS_MAC_OS) {
+    // TODO
+  } else {
+    isMuted = newMuted
+  }
 }
 
 app.get('/config', (req, res) => {
+  console.log('GET /config')
   const hostname = os.hostname().split('.')[0]
   res.json({
     hostname,
@@ -63,7 +83,7 @@ app.get('/config', (req, res) => {
     maxVolume: MAX_VOLUME,
     stepSize: STEP_SIZE,
     volume,
-    isMuted
+    isMuted,
   })
 })
 
@@ -83,12 +103,9 @@ app.post('/volume', (req, res) => {
     setIsMuted(false)
   }
   if (action === 'SET_VOLUME') {
-    setVolume(req.body.volume)
+    setVolumeLevel(req.body.volume)
   }
-  res.json({
-    volume,
-    isMuted
-  })
+  res.json(getCurrentSettings())
 })
 
 // All other GET requests not handled before will return our React app
