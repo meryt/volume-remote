@@ -108,7 +108,7 @@ app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
 app.use(express.json())
 
 app.get('/config', async (req, res) => {
-  console.log('GET /config')
+  console.log(new Date().toLocaleString(), 'GET /config')
   const hostname = os.hostname().split('.')[0].replace(/-ethernet$/, '')
 
   let settings;
@@ -129,7 +129,7 @@ app.get('/config', async (req, res) => {
 })
 
 app.post('/volume', async (req, res) => {
-  console.log('POST', req.body)
+  console.log(new Date().toLocaleString(), 'POST', req.body)
   const action = req.body.action
   if (action === 'INCREASE') {
     await incrementVolume()
