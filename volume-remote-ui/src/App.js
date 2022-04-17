@@ -71,6 +71,7 @@ function App() {
 
   const handleMuteButtonClick = event => {
     event.preventDefault()
+    event.currentTarget.blur()
     if (isMuted) {
       postVolume({ action: 'UNMUTE' })
     } else {
@@ -80,16 +81,19 @@ function App() {
 
   const handleVolumeDownClick = event => {
     event.preventDefault()
+    event.currentTarget.blur()
     postVolume({ action: 'DECREASE' })
   }
 
   const handleVolumeUpClick = event => {
     event.preventDefault()
+    event.currentTarget.blur()
     postVolume({ action: 'INCREASE' })
   }
 
   const handleRefreshClick = event => {
     event.preventDefault()
+    event.currentTarget.blur()
     setNeedsRefresh(true)
   }
 
@@ -99,6 +103,7 @@ function App() {
 
   const handleSpaceClick = (event) => {
     event.preventDefault()
+    event.currentTarget.blur()
     postVolume({action: 'PRESS_SPACE'})
   }
 
