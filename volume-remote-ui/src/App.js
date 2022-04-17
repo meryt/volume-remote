@@ -109,11 +109,11 @@ function App() {
 
   return (
     <div className="App container">
-      <div className="row mt-3 mb-5">
+      <div className="row mt-3 mb-4">
         <h1>{isLoading ? 'Loading...' : hostname}</h1>
       </div>
       <div className="container">
-        <div className="row mb-5">
+        <div className="row mb-4">
           <Button
             disabled={isLoading}
             onClick={handleMuteButtonClick}
@@ -124,14 +124,13 @@ function App() {
                   isLoading || isMuted ? 'bi-volume-mute' : 'bi-volume-off'
                 }`}></i>
             </p>
-            <p>Sound {isLoading ? 'Loading...' : isMuted ? 'Off' : 'On'}</p>
-            <p>
-              {isLoading ? '...' : `Click to ${isMuted ? 'unmute' : 'mute'}`}
+            <p>Sound is {isLoading ? 'Loading...' : isMuted ? 'Off' : 'On'}.
+              {isLoading ? '...' : ` Click to ${isMuted ? 'unmute' : 'mute'}.`}
             </p>
           </Button>
         </div>
 
-        <div className="row mb-5">
+        <div className="row mb-4">
           {levels.map(e => {
             return (
               <div className="col vol-level-col" key={`volume-level-${e}`}>
@@ -148,7 +147,7 @@ function App() {
           })}
         </div>
 
-        <div className="row mb-5">
+        <div className="row mb-4">
           <div className="col me-3">
             <div className="row">
               <Button
@@ -171,7 +170,7 @@ function App() {
           </div>
         </div>
 
-        <div className="row mb-5 play-pause">
+        <div className="row mb-4 play-pause">
           <Button variant="primary" onClick={handleSpaceClick}>
             {isLoading && (
               <Spinner animation="border" role="status">
@@ -188,7 +187,7 @@ function App() {
           </Button>
         </div>
 
-        <div className="row mb-3">
+        <div className="row">
           <Button variant="primary" onClick={handleRefreshClick}>
             {isLoading && (
               <Spinner animation="border" role="status">
