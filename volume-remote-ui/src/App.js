@@ -97,14 +97,14 @@ function App() {
     setNeedsRefresh(true)
   }
 
-  const setVolumeLevel = (level) => {
-    postVolume({action: 'SET_VOLUME', volume: level})
+  const setVolumeLevel = level => {
+    postVolume({ action: 'SET_VOLUME', volume: level })
   }
 
-  const handleSpaceClick = (event) => {
+  const handleSpaceClick = event => {
     event.preventDefault()
     event.currentTarget.blur()
-    postVolume({action: 'PRESS_SPACE'})
+    postVolume({ action: 'PRESS_SPACE' })
   }
 
   return (
@@ -137,7 +137,9 @@ function App() {
               <div className="col vol-level-col" key={`volume-level-${e}`}>
                 <Button
                   disabled={isLoading}
-                  onClick={() => {setVolumeLevel(e)}}
+                  onClick={() => {
+                    setVolumeLevel(e)
+                  }}
                   variant={
                     !isMuted && volume > e ? 'primary' : 'secondary'
                   }></Button>
@@ -169,14 +171,20 @@ function App() {
           </div>
         </div>
 
-        <div className="row mb-5">
+        <div className="row mb-5 play-pause">
           <Button variant="primary" onClick={handleSpaceClick}>
             {isLoading && (
               <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             )}
-            {!isLoading && <span>[space]</span>}
+            {!isLoading && (
+              <div>
+                <i className="bi-play-btn"></i>
+                <span> </span>
+                <i className="bi-pause-btn"></i>
+              </div>
+            )}
           </Button>
         </div>
 

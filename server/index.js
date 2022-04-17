@@ -19,6 +19,7 @@ const STEP_SIZE = MAX_VOLUME / NUM_VOLUME_LEVEL_BARS
 
 var volume = 40
 var isMuted = false
+var pressSpaceCooldownPeriodExpired = true
 
 const IS_MAC_OS = os.platform().toLowerCase() === 'darwin'
 if (!IS_MAC_OS) {
@@ -104,8 +105,15 @@ const setIsMuted = async newIsMuted => {
 }
 
 const pressSpace = async () => {
-  if (IS_MAC_OS) {
+  if (IS_MAC_OS && pressSpaceCooldownPeriodExpired) {
+    pressSpaceCooldownPeriodExpired = false
+    // don't allow multiple space presses within 500 millis -- if the page is
+    // running in the browser, clicking the space button will send a space
+    // key, which will click the space button again, etc../
+    setTimeout(() => {pressSpaceCooldownPeriodExpired = true}, 500)
     await osascript('tell application "System Events" to keystroke " "')
+  } else if (IS_MAC_OS) {
+    console.log(new Date().toLocaleString(), "Space press cooldown period not expired; skipping.")
   }
 }
 
