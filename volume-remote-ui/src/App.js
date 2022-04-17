@@ -4,6 +4,7 @@ import './App.scss'
 import { Button, Spinner } from 'react-bootstrap'
 
 import useHttp from './hooks/use-http'
+import usePageVisibility from './hooks/use-page-visibility'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.scss'
@@ -17,6 +18,19 @@ function App() {
   const [needsRefresh, setNeedsRefresh] = useState(true)
 
   const { sendRequest } = useHttp()
+
+  const isVisible = usePageVisibility()
+  /*
+  if (isVisible) {
+    document.title = 'Active'
+  } else {
+    document.title = 'Inactive'
+  }
+  */
+
+  useEffect(() => {
+    console.log(isVisible ? 'Page is visible' : 'Page is not visible')
+  }, [isVisible])
 
   useEffect(() => {
     if (needsRefresh) {
@@ -83,6 +97,11 @@ function App() {
     postVolume({action: 'SET_VOLUME', volume: level})
   }
 
+  const handleSpaceClick = (event) => {
+    event.preventDefault()
+    postVolume({action: 'PRESS_SPACE'})
+  }
+
   return (
     <div className="App container">
       <div className="row mt-3 mb-5">
@@ -110,11 +129,10 @@ function App() {
         <div className="row mb-5">
           {levels.map(e => {
             return (
-              <div className="col vol-level-col">
+              <div className="col vol-level-col" key={`volume-level-${e}`}>
                 <Button
                   disabled={isLoading}
                   onClick={() => {setVolumeLevel(e)}}
-                  key={`volume-level-${e}`}
                   variant={
                     !isMuted && volume > e ? 'primary' : 'secondary'
                   }></Button>
@@ -144,6 +162,17 @@ function App() {
               </Button>
             </div>
           </div>
+        </div>
+
+        <div className="row mb-5">
+          <Button variant="primary" onClick={handleSpaceClick}>
+            {isLoading && (
+              <Spinner animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+            )}
+            {!isLoading && <span>[space]</span>}
+          </Button>
         </div>
 
         <div className="row mb-3">

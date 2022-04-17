@@ -24,7 +24,7 @@ const IS_MAC_OS = os.platform().toLowerCase() === 'darwin'
 if (!IS_MAC_OS) {
   console.log(`System is running ${os.platform()}; volume control will be simulated`)
 } else {
-  console.log(`System is running Mac OS`)  
+  console.log(`System is running Mac OS`)
 }
 
 const osascript = async (cmd) => {
@@ -103,6 +103,12 @@ const setIsMuted = async newIsMuted => {
   }
 }
 
+const pressSpace = async () => {
+  if (IS_MAC_OS) {
+    await osascript('tell application "System Events" to keystroke " "')
+  }
+}
+
 // Have Node serve the files for our React app
 app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
 app.use(express.json())
@@ -145,6 +151,9 @@ app.post('/volume', async (req, res) => {
   }
   if (action === 'SET_VOLUME') {
     await setVolumeLevel(req.body.volume)
+  }
+  if (action === 'PRESS_SPACE') {
+    await pressSpace()
   }
   res.json(await getCurrentSettings())
 })
