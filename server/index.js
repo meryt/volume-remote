@@ -3,6 +3,7 @@ import path from 'path'
 import express from 'express'
 import os from 'os'
 import { execa } from 'execa'
+import winston from 'winston'
 
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -11,6 +12,20 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const PORT = process.env.PORT || 3031
+
+const logFormat = winston.format.printf(({level, message, timestamp}) => {
+  return `${timestamp} ${level.toUpperCase()}: ${message}`
+})
+const logger = winston.createLogger({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    logFormat
+  ),
+  transports: [
+    new winston.transports.File({ filename: '/tmp/volume-remote.log' })
+  ]
+})
+
 const app = express()
 
 const NUM_VOLUME_LEVEL_BARS = 16
@@ -23,9 +38,9 @@ var pressSpaceCooldownPeriodExpired = true
 
 const IS_MAC_OS = os.platform().toLowerCase() === 'darwin'
 if (!IS_MAC_OS) {
-  console.log(`System is running ${os.platform()}; volume control will be simulated`)
+  logger.info(`System is running ${os.platform()}; volume control will be simulated`)
 } else {
-  console.log(`System is running Mac OS`)
+  logger.info(`System is running Mac OS`)
 }
 
 const osascript = async (cmd) => {
@@ -113,7 +128,7 @@ const pressSpace = async () => {
     setTimeout(() => {pressSpaceCooldownPeriodExpired = true}, 500)
     await osascript('tell application "System Events" to keystroke " "')
   } else if (IS_MAC_OS) {
-    console.log(new Date().toLocaleString(), "Space press cooldown period not expired; skipping.")
+    logger.info("Space press cooldown period not expired; skipping.")
   }
 }
 
@@ -122,7 +137,7 @@ app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
 app.use(express.json())
 
 app.get('/config', async (req, res) => {
-  console.log(new Date().toLocaleString(), 'GET /config')
+  logger.info('GET /config')
   const hostname = os.hostname().split('.')[0].replace(/-ethernet$/, '')
 
   let settings;
@@ -143,7 +158,7 @@ app.get('/config', async (req, res) => {
 })
 
 app.post('/volume', async (req, res) => {
-  console.log(new Date().toLocaleString(), 'POST', req.body)
+  logger.info(`POST /volume ${JSON.stringify(req.body)}`)
   const action = req.body.action
   if (action === 'INCREASE') {
     await incrementVolume()
@@ -174,5 +189,5 @@ app.get('*', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`Server listening on ${PORT}`)
+  logger.info(`Server listening on ${PORT}`)
 })
