@@ -8,7 +8,7 @@ import fs from 'fs'
 // Can't use native __dirname in module
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const homedir = os.homedir()
-const launchpath = `${homedir}/Library/LaunchAgents`
+const launchpath = `${homedir}/Library/LaunchAgents/com.meryt.VolumeRemote.plist`
 
 const contents = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
