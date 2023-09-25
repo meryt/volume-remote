@@ -7,6 +7,7 @@ import winston from 'winston'
 
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 
 // Can't use native __dirname in module
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -132,6 +133,28 @@ const pressSpace = async () => {
   }
 }
 
+const doPhotos = async (reqBody, res) => {
+  
+  const currentMonth = new Date().toISOString().slice(0,7); // e.g. '2023-07'
+
+  const action = reqBody.action || `deploy album=national-days-${currentMonth}`
+
+  if (action.startsWith('test')) {
+    res.send(`Would have executed the following command:\n${action}\n`)
+    return
+  }
+
+  exec('cd /Users/jenny/doc/projects/national-days && make ' + action, (err, stdout, stderr) => {
+  if (err) {
+    //some err occurred
+    res.send(err)
+  } else {
+   // the *entire* stdout and stderr (buffered)
+    res.send(`${stdout}\n${stderr}`);
+  }
+});
+}
+
 // Have Node serve the files for our React app
 app.use(express.static(path.resolve(__dirname, '../volume-remote-ui/build')))
 app.use(express.json())
@@ -179,6 +202,11 @@ app.post('/volume', async (req, res) => {
     await pressSpace()
   }
   res.json(await getCurrentSettings())
+})
+
+app.post('/photos', async (req, res) => {
+  logger.info(`POST /photos ${JSON.stringify(req.body)}`)
+  doPhotos(req.body, res);
 })
 
 // All other GET requests not handled before will return our React app
